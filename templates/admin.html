@@ -1,0 +1,209 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Dashboard - Contract Language Simplifier{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="text-white mb-4">
+            <i class="bi bi-gear"></i> Admin Dashboard
+        </h1>
+    </div>
+</div>
+
+<!-- Statistics -->
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="stats-card">
+            <i class="bi bi-people" style="font-size: 2rem;"></i>
+            <h3 class="mt-2">{{ stats.total_users }}</h3>
+            <p class="mb-0">Total Users</p>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="stats-card" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+            <i class="bi bi-file-earmark-text" style="font-size: 2rem;"></i>
+            <h3 class="mt-2">{{ stats.total_requests }}</h3>
+            <p class="mb-0">Total Requests</p>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="stats-card" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+            <i class="bi bi-book" style="font-size: 2rem;"></i>
+            <h3 class="mt-2">{{ stats.total_glossary_terms }}</h3>
+            <p class="mb-0">Glossary Terms</p>
+        </div>
+    </div>
+</div>
+
+<!-- Glossary Management -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <h4 class="card-title mb-4">
+                    <i class="bi bi-book"></i> Glossary Management
+                </h4>
+                
+                <!-- Add New Term Form -->
+                <form method="POST" action="{{ url_for('add_glossary_term') }}" class="mb-4">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <input type="text" class="form-control" name="term" placeholder="Legal Term" required>
+                        </div>
+                        <div class="col-md-5">
+                            <input type="text" class="form-control" name="explanation" placeholder="Simplified Explanation" required>
+                        </div>
+                        <div class="col-md-2">
+                            <input type="text" class="form-control" name="category" placeholder="Category (optional)">
+                        </div>
+                        <div class="col-md-2">
+                            <button type="submit" class="btn btn-primary w-100">
+                                <i class="bi bi-plus-circle"></i> Add Term
+                            </button>
+                        </div>
+                    </div>
+                </form>
+                
+                <!-- Glossary Terms Table -->
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Term</th>
+                                <th>Explanation</th>
+                                <th>Category</th>
+                                <th>Created</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for term in glossary_terms %}
+                            <tr>
+                                <td><strong>{{ term.term }}</strong></td>
+                                <td>{{ term.simplified_explanation[:100] }}...</td>
+                                <td>
+                                    {% if term.category %}
+                                        <span class="badge bg-info">{{ term.category }}</span>
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ term.created_at.strftime('%Y-%m-%d') }}</td>
+                                <td>
+                                    <form method="POST" action="{{ url_for('delete_glossary_term', term_id=term.id) }}" 
+                                          style="display: inline;" 
+                                          onsubmit="return confirm('Delete this term?');">
+                                        <button type="submit" class="btn btn-sm btn-danger">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- User Management -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <h4 class="card-title mb-4">
+                    <i class="bi bi-people"></i> User Management
+                </h4>
+                
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Username</th>
+                                <th>Email</th>
+                                <th>Admin</th>
+                                <th>Requests</th>
+                                <th>Joined</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for user in users %}
+                            <tr>
+                                <td>{{ user.id }}</td>
+                                <td>{{ user.username }}</td>
+                                <td>{{ user.email }}</td>
+                                <td>
+                                    {% if user.is_admin %}
+                                        <span class="badge bg-success">Yes</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">No</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ user.simplification_requests.count() }}</td>
+                                <td>{{ user.created_at.strftime('%Y-%m-%d') }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Requests Log -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <h4 class="card-title mb-4">
+                    <i class="bi bi-clock-history"></i> Recent Simplification Requests
+                </h4>
+                
+                <div class="table-responsive">
+                    <table class="table table-hover table-sm">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>User</th>
+                                <th>Text Preview</th>
+                                <th>Level</th>
+                                <th>Readability Δ</th>
+                                <th>Time</th>
+                                <th>Date</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for req in recent_requests %}
+                            <tr>
+                                <td>{{ req.id }}</td>
+                                <td>{{ req.user.username }}</td>
+                                <td>
+                                    <span class="text-truncate d-inline-block" style="max-width: 200px;">
+                                        {{ req.original_text[:80] }}...
+                                    </span>
+                                </td>
+                                <td><span class="badge bg-info">{{ req.simplification_level }}</span></td>
+                                <td>
+                                    {% if req.readability_before and req.readability_after %}
+                                        <span class="badge bg-success">
+                                            -{{ "%.1f"|format(req.readability_before - req.readability_after) }}
+                                        </span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ "%.2f"|format(req.processing_time) }}s</td>
+                                <td>{{ req.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

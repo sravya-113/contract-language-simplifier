@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Contract Language Simplifier{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="text-white mb-4">
+            <i class="bi bi-speedometer2"></i> Welcome, {{ user.username }}!
+        </h1>
+    </div>
+</div>
+
+<!-- Statistics Cards -->
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="stats-card">
+            <i class="bi bi-file-text" style="font-size: 2rem;"></i>
+            <h3 class="mt-2">{{ stats.total_requests }}</h3>
+            <p class="mb-0">Total Simplifications</p>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="stats-card" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+            <i class="bi bi-clock-history" style="font-size: 2rem;"></i>
+            <h3 class="mt-2">{{ stats.recent_requests|length }}</h3>
+            <p class="mb-0">Recent Requests</p>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="stats-card" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+            <i class="bi bi-person-circle" style="font-size: 2rem;"></i>
+            <h3 class="mt-2">Active</h3>
+            <p class="mb-0">Account Status</p>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <h4 class="card-title mb-4">
+                    <i class="bi bi-lightning"></i> Quick Actions
+                </h4>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <a href="{{ url_for('simplify') }}" class="btn btn-primary btn-lg w-100">
+                            <i class="bi bi-magic"></i> Simplify New Document
+                        </a>
+                    </div>
+                    {% if session.get('is_admin') %}
+                    <div class="col-md-6 mb-3">
+                        <a href="{{ url_for('admin') }}" class="btn btn-outline-primary btn-lg w-100">
+                            <i class="bi bi-gear"></i> Admin Dashboard
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Simplifications -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <h4 class="card-title mb-4">
+                    <i class="bi bi-clock-history"></i> Recent Simplifications
+                </h4>
+                
+                {% if stats.recent_requests %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Original Text</th>
+                                <th>Level</th>
+                                <th>Readability Improvement</th>
+                                <th>Processing Time</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for req in stats.recent_requests %}
+                            <tr>
+                                <td>{{ req.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                                <td>
+                                    <span class="text-truncate d-inline-block" style="max-width: 300px;">
+                                        {{ req.original_text[:100] }}...
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="badge bg-info">{{ req.simplification_level }}</span>
+                                </td>
+                                <td>
+                                    {% if req.readability_before and req.readability_after %}
+                                        <span class="badge bg-success">
+                                            {{ "%.1f"|format(req.readability_before - req.readability_after) }} grades
+                                        </span>
+                                    {% else %}
+                                        <span class="text-muted">N/A</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ "%.2f"|format(req.processing_time) }}s</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-5">
+                    <i class="bi bi-inbox" style="font-size: 3rem; color: #cbd5e1;"></i>
+                    <p class="text-muted mt-3">No simplifications yet. Start by simplifying your first document!</p>
+                    <a href="{{ url_for('simplify') }}" class="btn btn-primary mt-2">
+                        <i class="bi bi-magic"></i> Get Started
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

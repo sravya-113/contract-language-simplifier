@@ -1,0 +1,199 @@
+{% extends "base.html" %}
+
+{% block title %}Simplify Document - Contract Language Simplifier{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="text-white mb-4">
+            <i class="bi bi-magic"></i> Simplify Legal Document
+        </h1>
+    </div>
+</div>
+
+<!-- Input Form -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body p-4">
+                <h4 class="card-title mb-4">
+                    <i class="bi bi-upload"></i> Input Document
+                </h4>
+                
+                <form method="POST" action="{{ url_for('simplify') }}" enctype="multipart/form-data" id="simplifyForm">
+                    <div class="mb-3">
+                        <label for="text" class="form-label">Paste Legal Text</label>
+                        <textarea class="form-control" id="text" name="text" rows="8" 
+                                  placeholder="Paste your legal contract or policy text here...">{{ original_text if original_text else '' }}</textarea>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="file" class="form-label">Or Upload Text File (.txt)</label>
+                        <input class="form-control" type="file" id="file" name="file" accept=".txt">
+                        <small class="text-muted">Supported format: .txt</small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="level" class="form-label">Simplification Level</label>
+                        <select class="form-select" id="level" name="level">
+                            <option value="basic" {% if level == 'basic' %}selected{% endif %}>
+                                Basic - Very Simple (Elementary School Level)
+                            </option>
+                            <option value="intermediate" {% if level == 'intermediate' or not level %}selected{% endif %}>
+                                Intermediate - Plain English (Middle School Level)
+                            </option>
+                            <option value="advanced" {% if level == 'advanced' %}selected{% endif %}>
+                                Advanced - Clearer Language (High School Level)
+                            </option>
+                        </select>
+                    </div>
+                    
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary btn-lg" id="submitBtn">
+                            <i class="bi bi-magic"></i> Simplify Document
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if simplified_text %}
+<!-- Results Section -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body p-4">
+                <h4 class="card-title mb-4">
+                    <i class="bi bi-check-circle text-success"></i> Simplification Results
+                    <span class="badge bg-secondary float-end">{{ processing_time }}s</span>
+                </h4>
+                
+                <!-- Readability Comparison -->
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <h5>Original Readability</h5>
+                        <div class="readability-badge badge bg-danger">
+                            Grade Level: {{ "%.1f"|format(readability_before.flesch_kincaid_grade) }}
+                        </div>
+                        <div class="readability-badge badge bg-warning ms-2">
+                            Fog Index: {{ "%.1f"|format(readability_before.gunning_fog) }}
+                        </div>
+                        <p class="mt-2 text-muted">{{ readability_before.grade_interpretation }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <h5>Simplified Readability</h5>
+                        <div class="readability-badge badge bg-success">
+                            Grade Level: {{ "%.1f"|format(readability_after.flesch_kincaid_grade) }}
+                        </div>
+                        <div class="readability-badge badge bg-info ms-2">
+                            Fog Index: {{ "%.1f"|format(readability_after.gunning_fog) }}
+                        </div>
+                        <p class="mt-2 text-muted">{{ readability_after.grade_interpretation }}</p>
+                    </div>
+                </div>
+                
+                <!-- Side-by-Side Comparison -->
+                <h5 class="mb-3">Side-by-Side Comparison</h5>
+                <div class="comparison-container">
+                    <div>
+                        <h6 class="text-muted">
+                            <i class="bi bi-file-text"></i> Original Text
+                        </h6>
+                        <div class="text-box">
+                            {{ original_text }}
+                        </div>
+                    </div>
+                    <div>
+                        <h6 class="text-muted">
+                            <i class="bi bi-stars"></i> Simplified Text (with highlighted terms)
+                        </h6>
+                        <div class="text-box">
+                            {{ highlighted_text|safe }}
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Summary Section -->
+                {% if summary %}
+                <div class="mt-4">
+                    <h5 class="mb-3">
+                        <i class="bi bi-card-text"></i> Summary
+                    </h5>
+                    <div class="alert alert-info">
+                        {{ summary }}
+                    </div>
+                </div>
+                {% endif %}
+                
+                <!-- Legal Terms Identified -->
+                {% if identified_terms %}
+                <div class="mt-4">
+                    <h5 class="mb-3">
+                        <i class="bi bi-book"></i> Legal Terms Identified ({{ identified_terms|length }})
+                    </h5>
+                    <div class="row">
+                        {% for term in identified_terms[:10] %}
+                        <div class="col-md-6 mb-2">
+                            <div class="alert alert-warning mb-2">
+                                <strong>{{ term.term }}</strong>: {{ term.explanation }}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% if identified_terms|length > 10 %}
+                    <p class="text-muted">
+                        <small>Showing 10 of {{ identified_terms|length }} terms. Hover over highlighted terms in the text for more.</small>
+                    </p>
+                    {% endif %}
+                </div>
+                {% endif %}
+                
+                <!-- Download Button -->
+                <div class="mt-4 text-center">
+                    <button class="btn btn-outline-primary" onclick="downloadSimplified()">
+                        <i class="bi bi-download"></i> Download Simplified Text
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Show loading state on form submit
+    document.getElementById('simplifyForm').addEventListener('submit', function() {
+        const btn = document.getElementById('submitBtn');
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Processing...';
+        btn.disabled = true;
+    });
+    
+    // Download simplified text
+    function downloadSimplified() {
+        {% if simplified_text %}
+        const text = {{ simplified_text|tojson }};
+        const blob = new Blob([text], { type: 'text/plain' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'simplified_contract.txt';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+        {% endif %}
+    }
+    
+    // Initialize tooltips for legal terms
+    $(document).ready(function() {
+        $('.legal-term').tooltip({
+            placement: 'top',
+            trigger: 'hover'
+        });
+    });
+</script>
+{% endblock %}
