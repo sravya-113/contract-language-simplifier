@@ -37,6 +37,11 @@ app.config.from_object(get_config())
 db.init_app(app)
 jwt = JWTManager(app)
 
+# Create database tables if they don't exist
+# This is crucial for production where we don't run app.py directly
+with app.app_context():
+    db.create_all()
+
 # Create upload folder
 Path(app.config['UPLOAD_FOLDER']).mkdir(parents=True, exist_ok=True)
 

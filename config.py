@@ -89,8 +89,10 @@ class ProductionConfig(Config):
     JWT_COOKIE_SECURE = True
     
     # Override with environment variables in production
-    SECRET_KEY = os.environ.get('SECRET_KEY')
-    JWT_SECRET_KEY = os.environ.get('JWT_SECRET_KEY')
+    # Override with environment variables in production, but keep defaults if not set
+    # This prevents the app from crashing if these env vars are missing
+    SECRET_KEY = os.environ.get('SECRET_KEY') or 'prod-secret-key-please-change'
+    JWT_SECRET_KEY = os.environ.get('JWT_SECRET_KEY') or 'prod-jwt-secret-please-change'
 
 
 class TestingConfig(Config):
